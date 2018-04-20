@@ -13,15 +13,14 @@ router.get('/test', (req, res) => res.json({blah: "blah", crazy: "Users WOrks"})
 // @desc   Register user 
 // @access Public
 router.post('/register', (req, res) => { 
-	console.log(req.body)
   User.findOne({ email: req.body.email})
   .then((user) => {
   	if(user) {
   		return res.status(400).json({ error: "Email Exists", message: "Email already being used"})
   	} else {
-  		const userParams = populateUserParams(req.body);
-		  genNewUser(userParams)
-		  .then(newUser => {
+  		populateUserParams(req.body)		  
+		  .then(params => {
+			  const newUser = new User(params)
 			  newUser.save()
 			  .then(user => res.json(user))
 			  .catch(err => console.log(err))		  	
@@ -31,26 +30,22 @@ router.post('/register', (req, res) => {
 })
 
 const populateUserParams = (reqBody) => {
-	return {
-	name: reqBody.name,
-	email: reqBody.email,
-	avatar: gravatar.url({s: '200', r: 'pg', d: 'mm'}),
-	password: reqBody.password
-};
-}
-
-const genNewUser = (userParams) => {
 	return new Promise((resolve, reject) => {
-		genBcrypt(userParams.password)
-		.then((hash) => {
-			userParams.password = hash
-		  newUser = new User(userParams)
-			if (newUser) { 
-			resolve(newUser)
-			} else { reject(err)}
-		})		
+		genBcrypt(reqBody.password)
+		.then((hash, err) => {
+		  const params = {
+		 	 name: reqBody.name,
+			 email: reqBody.email,
+			 avatar: gravatar.url({s: '200', r: 'pg', d: 'mm'}),
+			 password: hash
+		  };
+		 if (hash) {
+		 	resolve(params)
+		 }
+		 else { reject(err)}		 
+		})
 	})
-} 
+}
 
 const genBcrypt = (password, userParams) => {
 	return new Promise((resolve, reject)=>{
