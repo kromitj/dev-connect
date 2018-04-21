@@ -1,9 +1,12 @@
 const express = require("express");
 const gravatar = require("gravatar");
 const bcrypt = require("bcryptjs");
+const jwt = require('jsonwebtoken');
+const passport = require("passport");
+
+const jwsSecret = require('../../config/keys').jwsSecret;
 
 const User = require('../../models/User')
-
 const router = express.Router();
 
 
@@ -17,11 +20,36 @@ router.post('/register', (req, res) => {
 		  .then(userParams => {
 			  const newUser = new User(userParams)
 			  newUser.save()
-			  .then(user => res.json(user))
+			  .then(user => res.json(user.basicInfo))
 			  .catch(err => console.log(err))		  	
 		  })
   	}
   })
+})
+
+router.post('/login', (req, res) => {
+	const email = req.body.email;
+	const password = req.body.password
+	User.findOne({email})
+	.then(user => {
+		if(!user) { res.status(404).json({error: "Invalid Email Or Password", message: "Password or Email is incorrect"})}
+		bcrypt.compare(password, user.password)
+		.then(isMatch => {
+			if (isMatch) {
+				jwt.sign(user.basicInfo, jwsSecret, { expiresIn: 3600}, (err, token) => {
+					res.json({
+						success: true,
+						token: "Bearer " + token
+					})					
+				})
+			}
+				else { res.json({message: "Failure"})}
+		})
+	})
+})
+
+router.get('/current', passport.authenticate('jwt', { session: false}), (req, res) => {
+	res.json(req.user)
 })
 
 const populateUserParams = (reqBody) => {

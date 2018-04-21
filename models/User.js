@@ -23,7 +23,11 @@ const UserSchema = new Schema({
  	default: Date.now()
  }
 });
-const User = mongoose.model('user', UserSchema);
+UserSchema.virtual('basicInfo').get(function () {
+  return {id: this._id, name: this.name, email: this.email, avatar: this.avatar};
+});
+
+const User = mongoose.model('users', UserSchema);
 
 module.exports = User;
 
