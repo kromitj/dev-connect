@@ -5,12 +5,13 @@ const jwt = require('jsonwebtoken');
 const passport = require("passport");
 
 const jwsSecret = require('../../config/keys').jwsSecret;
-
+const validateRegisterInput = require('../../validation/register');
 const User = require('../../models/User')
 const router = express.Router();
 
 
 router.post('/register', (req, res) => { 
+	console.log(req.body)
   User.findOne({ email: req.body.email})
   .then((user) => {
   	if(user) {
