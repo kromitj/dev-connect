@@ -6,50 +6,61 @@ const passport = require("passport");
 
 const jwsSecret = require('../../config/keys').jwsSecret;
 
+const validateRegisterInput = require('../../validation/register');
+const validateLoginInput = require('../../validation/login');
+
 const User = require('../../models/User')
+
 const router = express.Router();
 
 
 router.post('/register', (req, res) => { 
-  User.findOne({ email: req.body.email})
-  .then((user) => {
-  	if(user) {
-  		return res.status(400).json({ error: "Email Exists", message: "Email already being used"})
-  	} else {
-  		populateUserParams(req.body)		  
+  validateRegisterInput(req.body)
+  .then( errors => {
+  	console.log(errors)
+	  if (errors.isValid) {
+	  	console.log(errors.isValid)
+		  populateUserParams(req.body)		  
 		  .then(userParams => {
 			  const newUser = new User(userParams)
 			  newUser.save()
-			  .then(user => res.json(user.basicInfo))
-			  .catch(err => console.log(err))		  	
-		  })
-  	}
+			  .then(user => res.json({success: true, user: user.basicInfo}))
+			  .catch(err => {
+			  	console.log(err)})		  	
+			  	return res.status(500).json({success: false, errors: err})
+		  })	  	
+	  } else {
+	  	return res.status(400).json({success: false, errors: errors})
+	  }
   })
 })
 
 router.post('/login', (req, res) => {
-	const email = req.body.email;
-	const password = req.body.password
-	User.findOne({email})
-	.then(user => {
-		if(!user) { res.status(404).json({error: "Invalid Email Or Password", message: "Password or Email is incorrect"})}
-		bcrypt.compare(password, user.password)
-		.then(isMatch => {
-			if (isMatch) {
-				jwt.sign(user.basicInfo, jwsSecret, { expiresIn: 3600}, (err, token) => {
-					res.json({
-						success: true,
-						token: "Bearer " + token
-					})					
-				})
-			}
-				else { res.json({message: "Failure"})}
-		})
-	})
+	const { errors, isValid } = validateLoginInput(req.body)
+	if (isValid) {
+		const { name, password } = req.body;
+		User.findOne({name})
+		.then(user => {
+			if(!user) { res.status(404).json({success: false, error: "Invalid Email Or Password", message: "Password or EMAIL is incorrect"})}
+			bcrypt.compare(password, user.password)
+			.then(isMatch => {
+				if (isMatch) {
+					jwt.sign(user.basicInfo, jwsSecret, { expiresIn: 3600}, (err, token) => {
+						res.json({
+							success: true,
+							token: "Bearer " + token
+						})					
+					})
+				}	else { res.json({success: false, error: "Invalid Email or PASSWORD", message: "Password or Email is incorrect"})}
+			})
+		})	
+	} else {
+		return res.status(400).json({success: false, errors: errors})
+	}
 })
 
 router.get('/current', passport.authenticate('jwt', { session: false}), (req, res) => {
-	res.json(req.user)
+	res.json({success: true, user: req.user})
 })
 
 const populateUserParams = (reqBody) => {
