@@ -9,6 +9,7 @@ const jwsSecret = require('../../config/keys').jwsSecret;
 const validateRegisterInput = require('../../validation/register');
 const validateLoginInput = require('../../validation/login');
 
+
 const User = require('../../models/User')
 
 const router = express.Router();
@@ -20,7 +21,7 @@ router.post('/register', (req, res) => {
   	console.log(errors)
 	  if (errors.isValid) {
 	  	console.log(errors.isValid)
-		  populateUserParams(req.body)		  
+		  populateUserParams(req.body)
 		  .then(userParams => {
 			  const newUser = new User(userParams)
 			  newUser.save()
