@@ -2,6 +2,7 @@ const Validator = require('validator');
 const User = require('../models/User');
 
 const query = User.find()
+
 module.exports = function validatRegisterInput(data) {
 	let errors = {
 		isValid: true,

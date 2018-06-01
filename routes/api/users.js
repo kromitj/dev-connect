@@ -18,21 +18,19 @@ const router = express.Router();
 router.post('/register', (req, res) => { 
   validateRegisterInput(req.body)
   .then( errors => {
-  	console.log(errors)
 	  if (errors.isValid) {
-	  	console.log(errors.isValid)
 		  populateUserParams(req.body)
 		  .then(userParams => {
 			  const newUser = new User(userParams)
 			  newUser.save()
 			  .then(user => res.json({success: true, user: user.basicInfo}))
-			  .catch(err => {
-			  	console.log(err)})		  	
+			  .catch(err => {		  	
 			  	return res.status(500).json({success: false, errors: err})
-		  })	  	
-	  } else {
+		  	})  	
+	  	})
+	  }else {
 	  	return res.status(400).json({success: false, errors: errors})
-	  }
+	  } 
   })
 })
 
