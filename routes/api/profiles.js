@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const mongoose = require("mongoose");
 const passport = require("passport");
-
+const validateProfileInput = require('../../validation/profile');
 
 const Profile = require("../../models/Profile");
 const User = require("../../models/User");
@@ -41,15 +41,38 @@ router.post('/' , passport.authenticate('jwt', { session: false}), (req, res) =>
 	if(body.website) profileFields.website = body.website;
 	if(body.location) profileFields.location = body.location;
 	if(body.status) profileFields.status = body.status;
+	
 	if(typeof body.skills !== 'undefined') profileFields.skills = body.skills.split(',');
-	if(body.bio) profileFields.bio = body.bio;
-	if(body.githubusername) profileFields.githubusername = body.githubusername;
-
-
 	
-	
+	profileFields.social = {};
+	// if(body.social.youtube) profileFields.social.youtube = body.social.youtube;
+	// if(body.social.twitter) profileFields.social.twitter = body.social.twitter;
+	// if(body.social.facebook) profileFields.social.facebook = body.social.facebook;
+	// if(body.social.linkedin) profileFields.social.linkedin = body.social.linkedin;
+	// if(body.social.instagram) profileFields.social.instagram = body.social.instagram;
+  
+  // Update existing Profile
+  Profile.findOne({user: req.user.id})
+  .then(profile => {
+  	if (profile) {
+  		Profile.findOneAndUpdate(
+  			{user: req.user.id},
+  			{$set: profileFields}, 
+  			{new: true})
+  	} else {
+  		console.log("Creating New Profile")
+  		// Create a new Profile
+  		// Check for unique handle
+  		validateProfileInput(profileFields)
+  		.then(errors => {
+  			if (errors.isValid) {
+					new Profile.save().then(profile => res.json(profile))
+  			} else {
+  				return res.status(400).json({success: false, errors: errors})
+  			}
+  		})
+  	}
+  })
 });
-const packProfileFields = (fields => {
 
-})
 module.exports = router;
